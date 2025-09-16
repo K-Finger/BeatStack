@@ -6,7 +6,7 @@ form.addEventListener("submit", async (e) => {
   result.textContent = "Uploading…";
 
   const data = new FormData(form);
-  // title, image, audio are all included by default
+  // title, tags, image, audio are all included by default
 
   try {
     const res = await fetch("/api/uploads", {
@@ -21,4 +21,58 @@ form.addEventListener("submit", async (e) => {
   } catch (err) {
     result.textContent = "Error: " + err.message;
   }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("DOM loaded, binding button");
+
+  const titleEl = document.getElementById("title");
+  const tagsEl  = document.getElementById("tags");
+  const btn     = document.getElementById("generate-tags");
+
+  if (!btn) {
+    console.error("No generate-tags button found");
+    return;
+  }
+
+  btn.addEventListener("click", async () => {
+    const title = titleEl.value.trim();
+    console.log("Generate clicked, title=", title);
+
+    if (!title) {
+      alert("Please enter a title first.");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+
+    try {
+      const resp = await fetch("/api/tags/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title })
+      });
+
+      console.log("Tag API response status:", resp.status);
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        console.error("Tag API error body:", text);
+        throw new Error(text || resp.statusText);
+      }
+
+      const { tags } = await resp.json();
+      console.log("Tags received:", tags);
+
+      // fill the input (comma+space separated)
+      tagsEl.value = tags.join(", ");
+    } catch (err) {
+      console.error("Failed to generate tags:", err);
+      alert("Failed to generate tags. Check console for details.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Generate Tags";
+    }
+  });
 });

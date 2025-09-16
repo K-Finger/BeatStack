@@ -3,29 +3,80 @@
 <head>
   <meta charset="UTF-8" />
   <title>BeatStack Upload Test</title>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <style>
+    /* Optional: simple Google-looking button */
+    #google-popup {
+      display:inline-flex; align-items:center; gap:.5rem;
+      padding:.6rem 1rem; border:1px solid #dadce0; border-radius:4px;
+      background:#fff; cursor:pointer; font:500 14px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial;
+    }
+    #google-popup img { width:18px; height:18px }
+  </style>
 </head>
 <body>
-  <h1>Upload Image, Audio & Tags</h1>
+  <h1>BeatStack</h1>
+
+  <!-- Popup sign-in button (code flow) -->
+  <button id="google-popup">
+    <img src="https://developers.google.com/identity/images/g-logo.png" alt="G" />
+    <span>Sign in with Google</span>
+  </button>
+
+  <script>
+    // Wait for GIS to load
+    window.addEventListener('load', () => {
+      if (!google || !google.accounts || !google.accounts.oauth2) {
+        console.error("Google Identity Services failed to load.");
+        return;
+      }
+
+      const client = google.accounts.oauth2.initCodeClient({
+        client_id: '863125237094-1hepj2pkhe19ssieg89md8bleqr17cs9.apps.googleusercontent.com',
+        scope: 'openid email profile https://www.googleapis.com/auth/youtube.upload',
+        ux_mode: 'popup',
+        access_type: 'offline',   // get refresh_token on first consent
+        prompt: 'consent',        // force consent to receive refresh_token
+        callback: async (resp) => {
+          if (!resp || !resp.code) {
+            console.error('No authorization code returned:', resp);
+            return;
+          }
+          try {
+            const r = await fetch('http://localhost:8000/auth/code', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: resp.code })
+            });
+            const data = await r.json();
+            console.log('Backend token exchange result:', data);
+            // TODO: handle login success (store cookie/JWT, update UI)
+          } catch (e) {
+            console.error('Failed to send code to backend:', e);
+          }
+        }
+      });
+
+      document.getElementById('google-popup').addEventListener('click', () => {
+        client.requestCode();
+      });
+    });
+  </script>
+
   <form id="upload-form" enctype="multipart/form-data">
     <div>
       <label for="title">Title:</label>
-      <input
-        type="text"
-        id="title"
-        name="title"
-        placeholder="Video title"
-        required
-      />
+      <input type="text" id="title" name="title" placeholder="Video title" required />
     </div>
 
     <div>
       <label for="tags">Tags:</label>
-      <input
-        type="text"
-        id="tags"
-        name="tags"
-        placeholder='Separate tags with spaces or commas. Surround phrases with double-quotes'
-      />
+      <input type="text" id="tags" name="tags"
+             placeholder='Separate tags with spaces or commas. Surround phrases with double-quotes' />
+      <button type="button" id="generate-tags">Generate Tags</button>
     </div>
 
     <div>

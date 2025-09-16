@@ -26,6 +26,6 @@ The backend is built with **FastAPI** and integrates **Google OAuth2** for secur
 
 - **Backend:** FastAPI (Python)  
 - **Authentication:** OAuth2 (Google APIs)  
-- **Video Conversion:** Custom media processing with background tasks  
+- **Video Conversion:** Custom media processing with background tasks library 
 - **Deployment:** Docker-ready (customizable for cloud services)  
 
